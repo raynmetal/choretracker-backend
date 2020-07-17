@@ -7,14 +7,15 @@ from rest_framework.response import Response
 from rest_framework.views import APIView 
 
 from tracker.serializers import RegistrationSerializer 
+from tracker.renderers import UserJSONRenderer
 
 class RegistrationAPIView(APIView):
     permission_classes = (AllowAny,)
+    renderer_classes = (UserJSONRenderer,)
     serializer_class = RegistrationSerializer 
 
     def post(self, request):
-        user = request.data
-        print("Zoheb: " + str(user))
+        user = request.data.get('user', {})
 
         serializer = self.serializer_class(data=user)
         serializer.is_valid(raise_exception=True)
