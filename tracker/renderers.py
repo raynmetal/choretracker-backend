@@ -3,6 +3,10 @@ import json
 from rest_framework.renderers import JSONRenderer 
 
 class UserJSONRenderer(JSONRenderer):
+    """
+    Renderers take the intermediate step of template and context 
+    and converts it to the final byte stream served to the client.
+    """
     charset = 'utf-8'
 
     def render(self, data, media_type=None, renderer_context=None):

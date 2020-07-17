@@ -1,8 +1,9 @@
 from django.urls import path 
 
-from tracker.views import RegistrationAPIView 
+from tracker.views import (RegistrationAPIView, LoginAPIView)
 
 app_name = 'tracker'
 urlpatterns = [
-    path('users/', RegistrationAPIView.as_view())
+    path('users/register/', RegistrationAPIView.as_view()),
+    path('users/login/', LoginAPIView.as_view())
 ]
