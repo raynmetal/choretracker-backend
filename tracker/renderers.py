@@ -10,8 +10,12 @@ class UserJSONRenderer(JSONRenderer):
     charset = 'utf-8'
 
     def render(self, data, media_type=None, renderer_context=None):
-        
         token = data.get('token', None)
+        errors = data.get('errors', None)
+
+        # If view throws an error, data will contain an errors key
+        if errors is not None:
+            return super(UserJSONRenderer, self).render(data)
 
         # Replace byte token with utf-8 token, which plays 
         # better with a serializer

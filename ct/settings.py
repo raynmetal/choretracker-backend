@@ -129,3 +129,12 @@ STATIC_URL = '/static/'
 ##################################################
 
 AUTH_USER_MODEL = 'tracker.User'
+
+REST_FRAMEWORK = {
+
+    # Points to our exception handler sitting in the tracker app
+    'EXCEPTION_HANDLER': 'tracker.exceptions.tracker_exception_handler',
+
+    
+    'NON_FIELD_ERRORS_KEY': 'error',
+}
