@@ -17,7 +17,7 @@ def tracker_exception_handler(exc, context):
     if exception_class in handlers:
         return handlers[exception_class](exc, context, response)
     
-    return response 
+    return response
 
 
 def _handle_generic_error(exc, context, response):

@@ -134,7 +134,8 @@ REST_FRAMEWORK = {
 
     # Points to our exception handler sitting in the tracker app
     'EXCEPTION_HANDLER': 'tracker.exceptions.tracker_exception_handler',
-
-    
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'tracker.backends.JWTAuthentication',
+    ),
     'NON_FIELD_ERRORS_KEY': 'error',
 }
