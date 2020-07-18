@@ -1,4 +1,4 @@
 # Frontend portion of the project, managed in a separate repo
-/tracker/tracker-frontend/
+tracker/tracker-frontend/
 
-/*/__pycache__/
+**/__pycache__/
