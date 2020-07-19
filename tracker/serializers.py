@@ -2,7 +2,7 @@ from django.contrib.auth import authenticate
 
 from rest_framework import serializers 
 
-from tracker.models import User 
+from tracker.models import User, Space, Chore
 
 # Serializes User
 class UserSerializer(serializers.ModelSerializer):
@@ -100,3 +100,15 @@ class RegistrationSerializer(serializers.ModelSerializer):
     
     def create(self, validated_data):
         return User.objects.create_user(**validated_data)
+
+class SpaceSerializer(serializers.ModelSerializer):
+    """Serializes view, create, update, and delete of spaces"""
+    class Meta:
+        model = Space
+        fields = ['members', 'name', 'parent', 'id']
+    
+class ChoreSerializer(serializers.ModelSerializer):
+    """Serializes view, create, update, and delete of Chores"""
+    class Meta:
+        model = Chore 
+        fields = ['name', 'id', 'interval']
