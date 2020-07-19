@@ -1,3 +1,17 @@
+"""
+A set of utility functions for the purpose of calculating CFS related
+values in our application. 
+
+Functions that begin with an underscore are meant to be used with 
+simplified representations of User join Chore objects, such as 
+    vworks: a list of tuples, each of which contains a user id and
+        its associated vwork value(the virtual quantity of work 
+        a user has done)
+    vdeltas: a list of tuples, each of which contains a user id and
+        its associated vdelta value(the amount by which vwork increases
+        when the user performs a unit of real work)
+"""
+
 
 def _index(user_list, id):
     """ 
@@ -5,8 +19,6 @@ def _index(user_list, id):
     return the index of the user whose id matches id.
     """
     
-    print("_index:user_list")
-    print (user_list)
     for i in range(len(user_list)):
         if user_list[i][0] == id: return i 
         
@@ -85,12 +97,8 @@ def _order_project(vworks, vdeltas, interval, initial_offset, last_by=None, peri
         order_projection.append((last_by, elapsed_time))
         
         # Update value of user's vwork
-        print("_order_project:last_by : ")
-        print(last_by)
-        print("order_project:index of last_by")
-        print(_index(vworks, last_by))
         vwork = vworks.pop(_index(vworks, last_by)) 
-        vwork = (vwork[0], vwork[1] + vdeltas[_index(vdeltas, last_by)][1])
+        vwork = _update_vwork(vwork, vdeltas)
         
         # Insert vwork into appropriate position in the list
         vworks.insert(_next_vwork_index(vworks, vwork[1]), vwork)
@@ -100,10 +108,16 @@ def _order_project(vworks, vdeltas, interval, initial_offset, last_by=None, peri
     
     return order_projection
 
+def _update_vwork(vwork, vdeltas):
+    """
+    Given a single vwork tuple and a list of deltas, returns new value of 
+    vwork 
+    """
+    return (vwork[0], vwork[1] + vdeltas[_index(vdeltas, vwork[0])][1])
 
 
 
- """   
+"""   
 Run with: 
 
 from common.util.simplecfsscheduler import _test
@@ -114,8 +128,8 @@ def _test():
     TEST_last_by = 1
     print(TEST_last_by)
     #TEST_vworks = [(1, 25), (2, 45), (3,30), (4,60), (5, 10)]
-    #TEST_vworks = [(1, 0), (2, 0), (3, 0), (4, 0), (5, 0)]
-    TEST_vworks = [(1,0)]
+    TEST_vworks = [(1, 0), (2, 0), (3, 0), (4, 0), (5, 0)]
+    #TEST_vworks = [(1,0)]
     
     #TEST_vdeltas = [(1, 3.0), (2, 0.5), (3, 1), (4, 2.0), (5, 1)]
     TEST_vdeltas = [(1, 2.0), (2, 1.0), (3, 1.0), (4, 1.0), (5, 0.25)]
