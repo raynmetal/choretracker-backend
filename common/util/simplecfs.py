@@ -40,13 +40,14 @@ def _next_vwork_index(vworks, vwork_val):
 def _next_user_get(vworks, last_by=None):
     """
     Gets id of next user that needs to complete a chore. Expects a 
-    list of sorted vworks.
+    list of up to 2 vworks. If users can have consecutive turns 
+    at a chore, do not set last_by when calling this function.
 
     If empty list provided, returns None, otherwise, returns id 
     of next user scheduled to work. 
 
     If last_by provided equal to first user on the list, returns 
-    next_user.
+    the id of the next user in the list. 
     """
 
 
@@ -56,12 +57,9 @@ def _next_user_get(vworks, last_by=None):
     # Return first user if only one user in list
     if(len(vworks) == 1): return vworks[0][0]
 
-    # Otherwise return last user not in list
-    for user in vworks:   
-        if user[0] != last_by:
-            return user[0]
-    
-    return None
+    # Return first user in list unless user is the last one to perform 
+    # this chore, in which case return next user
+    return (vworks[0][0] if vworks[0][0] != last_by else vworks[1][0])
 
 
 
