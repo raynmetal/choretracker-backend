@@ -11,7 +11,7 @@ from common.util.simplecfs import _next_user_get, _order_project
 
 from tracker.managers import CustomUserManager
 
-# Create your models here.
+
 class User(AbstractUser, PermissionsMixin):
     username = None
     name = models.CharField(max_length=100, blank=True, null=True)
@@ -55,7 +55,7 @@ class User(AbstractUser, PermissionsMixin):
 
         # Get calendars for each individual chore associated with this user
         for chore in chores:
-            chore_calendar = chore.get_task_calendar()
+            chore_calendar = chore.get_chore_calendar()
 
             # Build a dictionary where the key is the timestamp of when the chore 
             # is scheduled, and value is a tuple containing a user and a chore
@@ -70,10 +70,6 @@ class User(AbstractUser, PermissionsMixin):
                 date_wise[date] = [(User.objects.get(pk=user_id), chore)]
         return date_wise
     
-    #TODO: Create a join-space method which adds a user who's just 
-    #   joined a space to all the chores associated with that space 
-
-
 
 class Space(models.Model):
     name = models.CharField(max_length=50)
@@ -91,7 +87,6 @@ class Space(models.Model):
             return self.name 
         return self.parent.full_name + "/" + self.name
 
-
     def initialize_members_from_parent_space(self):
         for member in self.parent.members.all():
             self.members.add(member) 
@@ -99,13 +94,19 @@ class Space(models.Model):
     def assign_member_to_chores(self, member):
         """
         Assign new members to all the chores in this space, including
-        subspaces 
+        chores in subspaces 
         """
         for chore in self.chores.all():
             chore.users.add(member)
         
         for child in self.child.all():
             child.assign_member_to_chores(member)
+
+    def mark_available(self, user):
+        self.userspace_set.get(user=user).mark_available()
+
+    def mark_unavailable(self, user):
+        self.userspace_set.get(user=user).mark_unavailable()
 
 
 class UserSpace(models.Model):
@@ -119,6 +120,15 @@ class UserSpace(models.Model):
         Mark user unavailable for performing chores in this space
         """
         self.available = False
+        
+        # Mark user unavailable for all chores in this space
+        for chore in self.space.chores.all():
+            chore.mark_unavailable(self.user)
+        
+        # Mark user unavailable for all chores in this space's subspaces
+        for child in self.space.child.all():
+            child.userspace_set.get(user=self.user).mark_unavailable()
+
         self.save()
     
     def mark_available(self):
@@ -127,22 +137,18 @@ class UserSpace(models.Model):
         after a period of their absence.
         """
         self.available = True 
+
+        # Mark user available for all chores in this space
+        for chore in self.space.chores.all():
+            chore.userchore_set.get(user=self.user).mark_available()
+        
+        # Mark user available for all chores in this space's subspaces
+        for child in self.space.child.all():
+            child.userspace_set.get(user=self.user).mark_available()
+        
         self.save()
     
-    def get_availability(self):
-        """
-        Recursive function that determines user availability for chores
-        based on available as marked here and in parent spaces
-        """
-        if not self.available:
-            return False
-        
-        parent_space = self.space.parent
-        if not parent_space:
-            return True
-        
-        parent_userspace = parent_space.userspace_set.get(user_id=self.user.pk)
-        return (True and parent_userspace.get_availability())
+
 
 class Chore(models.Model):
     name = models.CharField(max_length=200)
@@ -178,7 +184,7 @@ class Chore(models.Model):
         self.next_date = date
         self.get_next_user()
         if self.next_user:
-            self.min_vwork = self.userchore_set.filter(chore_id=self.pk).get(user_id=self.next_user.id).vwork
+            self.min_vwork = self.userchore_set.filter(available=True).get(user=self.next_user).vwork
             self.save()
 
     def get_next_user(self, consecutive_chores=False):
@@ -210,13 +216,13 @@ class Chore(models.Model):
             (datetime.date.today()  if datetime.date.today() > self.next_date else self.next_date)
             + datetime.timedelta(days=1))
     
-    def complete_chore(self, user_id):
+    def mark_complete(self, user):
         """
-        Mark chore complete by user id, update their work score and 
+        Mark chore complete by user, update their work score and 
         schedule the next round of this chore.
         """
         # Get and update userchore with least vwork value 
-        userchore = self.userchore_set.filter(chore=self.pk).get(user=user_id)
+        userchore = self.userchore_set.get(user=user)
         userchore.increment_work()
         userchore.save()
 
@@ -226,12 +232,27 @@ class Chore(models.Model):
         # Schedule next round of this chore
         self.schedule_chore(datetime.date.today() + datetime.timedelta(days=self.interval))
     
-    def get_task_calendar(self):
+    def get_chore_calendar(self):
+        """
+        Return a list of tuples where each tuple contains 
+            0: a user id, and,
+            1: the scheduled offset in days from
+             the present day for when this task is scheduled
+             for that user
+        """
         vworks = self._generate_vworks()
         vdeltas = self._generate_vdeltas()
         today = datetime.date.today()
         initial_offset = ((today if today > self.last_date else self.last_date) - today)
         return _order_project(vworks, vdeltas, self.interval, initial_offset.days, self.last_user, 30)
+
+    def mark_available(self, user):
+        self.userchore_set.get(user=user).mark_available()
+
+    def mark_unavailable(self, user):
+        self.userchore_set.get(user=user).mark_unavailable()
+        self.schedule_chore(self.next_date)
+
 
     def _generate_vworks(self, max_length = None):
         """
@@ -244,17 +265,14 @@ class Chore(models.Model):
         # Retrieve all users that are responsible for this chore, excluding users who aren't 
         # available
         userchores = self.userchore_set.filter(chore=self.pk).exclude(available=False)
+
         if(max_length):
             userchores = userchores[:max_length]
-        print("userchores")
-        print(userchores)
 
         # Build vworks 
         for userchore in userchores:
             vworks.append((userchore.user_id, userchore.vwork))
         
-        print("vworks")
-        print(vworks)
         return vworks
 
     def _generate_vdeltas(self):
@@ -268,8 +286,6 @@ class Chore(models.Model):
         # Retrieve all users that are responsible for this chore, excluding users who aren't 
         # available
         userchores = self.userchore_set.filter(chore=self.pk).exclude(available=False)
-        print("userchores")
-        print(userchores)
 
         # Build vworks 
         for userchore in userchores:
@@ -278,8 +294,6 @@ class Chore(models.Model):
         # Update last_date field 
         self.last_date = datetime.date.today()
 
-        print("vdeltas")
-        print(vdeltas)
         return vdeltas
 
     # These 2 functions may be unnecessary
@@ -294,15 +308,13 @@ class Chore(models.Model):
             'work':0,
             'delta_src':100
             })
-
-
+    
 
 class UserChore(models.Model):
     chore = models.ForeignKey(Chore, on_delete=models.CASCADE)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
 
     vwork = models.FloatField(default=0)
-    vdelta = models.FloatField(default=1.0)
     work = models.IntegerField(default=0)
     delta_src = models.FloatField(default=100.0)
     available = models.BooleanField(default=True)
@@ -310,14 +322,14 @@ class UserChore(models.Model):
     class Meta:
         ordering = ['vwork'] 
     
+    @property 
+    def vdelta(self):
+        return self.delta_src/100.0
+    
     def increment_work(self):
         self.vwork += self.vdelta 
         self.work += 1
 
-    def update_delta(self, delta_src):
-        self.delta_src = delta_src 
-        self.vdelta = delta_src/100.0
-    
     def mark_unavailable(self):
         """
         Mark user unavailable for performing this chore
@@ -331,13 +343,8 @@ class UserChore(models.Model):
         effect of resetting their vwork value
         """
         self.available = True 
-        self.vwork = self.chore.min_vwork
+        self.vwork = self.chore.min_vwork if self.chore.min_vwork > self.vwork else self.vwork
         self.save()
-
-    def get_availability(self):
-        space = self.chore.parent_space
-        userspace = space.userspace_set.get(user_id=self.user.pk)
-        return (self.available and userspace.get_availability())
 
 
 

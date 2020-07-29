@@ -31,7 +31,7 @@ class UserSerializer(serializers.ModelSerializer):
 
         return instance
 
-        
+
 # Serializes login requests
 class LoginSerializer(serializers.Serializer):
     email = serializers.CharField(max_length=255)
@@ -79,7 +79,6 @@ class LoginSerializer(serializers.Serializer):
         }
 
 
-
 # Serializes registration requests
 class RegistrationSerializer(serializers.ModelSerializer):
     """Serializes registration requests, creates a new user."""
@@ -100,15 +99,3 @@ class RegistrationSerializer(serializers.ModelSerializer):
     
     def create(self, validated_data):
         return User.objects.create_user(**validated_data)
-
-class SpaceSerializer(serializers.ModelSerializer):
-    """Serializes view, create, update, and delete of spaces"""
-    class Meta:
-        model = Space
-        fields = ['members', 'name', 'parent', 'id']
-    
-class ChoreSerializer(serializers.ModelSerializer):
-    """Serializes view, create, update, and delete of Chores"""
-    class Meta:
-        model = Chore 
-        fields = ['name', 'id', 'interval']

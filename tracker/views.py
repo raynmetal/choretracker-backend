@@ -10,7 +10,7 @@ from rest_framework.renderers import JSONRenderer
 
 from tracker.serializers import (
     RegistrationSerializer, LoginSerializer, UserSerializer,
-    SpaceSerializer, ChoreSerializer
+    
     )
 from tracker.renderers import UserJSONRenderer
 from tracker.models import Chore, Space
@@ -65,37 +65,3 @@ class LoginAPIView(APIView):
         serializer.is_valid(raise_exception=True)
 
         return Response(serializer.data, status = status.HTTP_200_OK)
-
-
-
-
-class ChoreListAPIView(ListCreateAPIView):
-    permission_classes = (IsAuthenticated,)
-    renderer_classes = (JSONRenderer,)
-    serializer_class =  ChoreSerializer 
-    queryset = Chore.objects.all()
-
-    def get(self, request, space_pk = None):
-        self.queryset = Chore.objects.filter(users__email = request.user)
-        if space_pk:
-            self.queryset = self.queryset.filter(parent_space_id = space_pk)
-
-        serializer = self.serializer_class(self.queryset, many=True)
-        return Response(serializer.data)
-
-class ChoreDetailAPIView(RetrieveUpdateAPIView):
-    permission_classes = (IsAuthenticated,)
-    renderer_classes = (JSONRenderer,)
-    serializer_class = ChoreSerializer
-
-class SpaceListAPIView(ListCreateAPIView):
-    permission_classes = (IsAuthenticated,)
-    renderer_classes = (JSONRenderer,)
-    serializer_class = SpaceSerializer
-    queryset = Space.objects.all()
-
-
-class SpaceDetailAPIView(RetrieveUpdateAPIView):
-    permission_classes = (IsAuthenticated,)
-    renderer_classes = (JSONRenderer,)
-    serializer_class = SpaceSerializer
