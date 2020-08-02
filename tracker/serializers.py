@@ -99,3 +99,53 @@ class RegistrationSerializer(serializers.ModelSerializer):
     
     def create(self, validated_data):
         return User.objects.create_user(**validated_data)
+
+
+# Serializes root spaces 
+class RootSpaceSerializer(serializers.Serializer):
+    name = serializers.CharField(max_length=50, required=True)
+    id = serializers.IntegerField(allow_null=True, read_only=True)
+
+    def update(self, instance, validated_data):
+        instance.name = validated_data.get('name', instance.name)
+        return instance
+    def create(self, validated_data):
+        name = validated_data.get('name')
+        creator = validated_data.get('creator')
+
+        space = Space.objects.create(name=name)
+        space.members.add(creator)
+        
+        return space
+
+
+# Serializes child spaces
+class SpaceSerializer(serializers.Serializer):
+    name = serializers.CharField(max_length=50, required=True)
+    full_name = serializers.CharField(max_length=600, read_only=True)
+    id = serializers.IntegerField(allow_null=True, read_only=True)
+    parent_id = serializers.IntegerField(allow_null=True)
+
+    def update(self, instance, validated_data):
+        parent_id = validated_data.get('parent_id', instance.parent.pk)
+
+        instance.name = validated_data.get('name', instance.name)
+
+        # Change this space's parent(eg., when changing this space's
+        # position on the tree)
+        instance.parent = Space.objects.get(pk=parent_id)
+        return instance
+    
+    def create(self, validated_data):
+        parent_id = validated_data.get('parent_id', None)
+
+        name = validated_data.get('name', None)
+        parent = Space.objects.get(pk=parent_id)
+
+        if not parent:
+            #TODO: add method to handle failure to retrieve space's parent
+            pass
+        space = Space.objects.create(name=name, parent=parent)
+        space.initialize_members_from_parent_space()       
+        return space
+

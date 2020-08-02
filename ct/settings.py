@@ -57,7 +57,9 @@ ROOT_URLCONF = 'ct.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [
+                os.path.join(BASE_DIR, 'tracker', 'tracker-frontend', 'build'),
+            ],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -126,13 +128,15 @@ USE_TZ = True
 
 STATIC_URL = '/static/'
 
+STATICFILES_DIRS = (
+    os.path.join(BASE_DIR, 'tracker', 'tracker-frontend', 'build', 'static'),
+)
 
 ##################################################
 
 AUTH_USER_MODEL = 'tracker.User'
 
 REST_FRAMEWORK = {
-
     # Points to our exception handler sitting in the tracker app
     'EXCEPTION_HANDLER': 'tracker.exceptions.tracker_exception_handler',
     'DEFAULT_AUTHENTICATION_CLASSES': (

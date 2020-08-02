@@ -109,47 +109,6 @@ class Space(models.Model):
         self.userspace_set.get(user=user).mark_unavailable()
 
 
-class UserSpace(models.Model):
-    space = models.ForeignKey(Space, on_delete=models.CASCADE)
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
-
-    available = models.BooleanField(default=True)
-
-    def mark_unavailable(self):
-        """
-        Mark user unavailable for performing chores in this space
-        """
-        self.available = False
-        
-        # Mark user unavailable for all chores in this space
-        for chore in self.space.chores.all():
-            chore.mark_unavailable(self.user)
-        
-        # Mark user unavailable for all chores in this space's subspaces
-        for child in self.space.child.all():
-            child.userspace_set.get(user=self.user).mark_unavailable()
-
-        self.save()
-    
-    def mark_available(self):
-        """
-        Marks user available for performing chores in this space
-        after a period of their absence.
-        """
-        self.available = True 
-
-        # Mark user available for all chores in this space
-        for chore in self.space.chores.all():
-            chore.userchore_set.get(user=self.user).mark_available()
-        
-        # Mark user available for all chores in this space's subspaces
-        for child in self.space.child.all():
-            child.userspace_set.get(user=self.user).mark_available()
-        
-        self.save()
-    
-
-
 class Chore(models.Model):
     name = models.CharField(max_length=200)
     parent_space = models.ForeignKey(
@@ -308,7 +267,7 @@ class Chore(models.Model):
             'work':0,
             'delta_src':100
             })
-    
+
 
 class UserChore(models.Model):
     chore = models.ForeignKey(Chore, on_delete=models.CASCADE)
@@ -347,6 +306,45 @@ class UserChore(models.Model):
         self.save()
 
 
+class UserSpace(models.Model):
+    space = models.ForeignKey(Space, on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+
+    available = models.BooleanField(default=True)
+
+    def mark_unavailable(self):
+        """
+        Mark user unavailable for performing chores in this space
+        """
+        self.available = False
+        
+        # Mark user unavailable for all chores in this space
+        for chore in self.space.chores.all():
+            chore.mark_unavailable(self.user)
+        
+        # Mark user unavailable for all chores in this space's subspaces
+        for child in self.space.child.all():
+            child.userspace_set.get(user=self.user).mark_unavailable()
+
+        self.save()
+    
+    def mark_available(self):
+        """
+        Marks user available for performing chores in this space
+        after a period of their absence.
+        """
+        self.available = True 
+
+        # Mark user available for all chores in this space
+        for chore in self.space.chores.all():
+            chore.userchore_set.get(user=self.user).mark_available()
+        
+        # Mark user available for all chores in this space's subspaces
+        for child in self.space.child.all():
+            child.userspace_set.get(user=self.user).mark_available()
+        
+        self.save()
+    
 
 @receiver(pre_delete, sender=User)
 def cascade_delete_space(sender, instance, **kwargs):
