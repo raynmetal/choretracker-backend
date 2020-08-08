@@ -119,6 +119,10 @@ class RootSpaceSerializer(serializers.Serializer):
         return space
 
 
+class MemberSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+
+
 # Serializes child spaces
 class SpaceSerializer(serializers.Serializer):
     name = serializers.CharField(max_length=50, required=True)
@@ -149,3 +153,42 @@ class SpaceSerializer(serializers.Serializer):
         space.initialize_members_from_parent_space()       
         return space
 
+
+# Serializes list of chores
+class ChoreListSerializer(serializers.Serializer):
+    name = serializers.CharField(max_length=50, required=True)
+    parent_space_id = serializers.IntegerField(required=True)
+    interval = serializers.IntegerField(required=False)
+    id = serializers.IntegerField(read_only=True)
+
+    next_date = serializers.DateField(read_only=True)
+    last_date = serializers.DateField(read_only=True)
+
+    next_user = MemberSerializer(read_only=True)
+    last_user = MemberSerializer(read_only=True)
+
+    def update(self, instance, validated_data):
+        parent_space_id = validated_data.get('parent_id', instance.parent_space.pk)
+        instance.name = validated_data.get('name', instance.name)
+        instance.interval = validated_data.get('interval', instance.interval)
+        instance.parent = Space.objects.get(pk=parent_space_id)
+        
+        instance.get_next_user()
+
+        instance.refresh_from_db()
+        return instance
+
+    def create(self, validated_data):
+        parent_space_id = validated_data.get('parent_space_id')
+        name = validated_data.get('name')
+        interval = validated_data.get('interval')
+        parent_space = Space.objects.get(pk=parent_space_id)
+        
+        instance = None
+        if(interval): instance = Chore.objects.create(name=name, interval=interval, parent_space=parent_space)
+        else: instance = Chore.objects.create(name=name, parent_space=parent_space)
+        instance._initialize_users()
+        instance.get_next_user()
+
+        instance.refresh_from_db()
+        return instance

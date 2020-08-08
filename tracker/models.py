@@ -89,7 +89,11 @@ class Space(models.Model):
 
     def initialize_members_from_parent_space(self):
         for member in self.parent.members.all():
-            self.members.add(member) 
+            self.members.add(member)
+
+    def assign_members_to_chores(self):
+        for member in self.members.all():
+            self.assign_member_to_chores(member)
 
     def assign_member_to_chores(self, member):
         """
@@ -98,6 +102,7 @@ class Space(models.Model):
         """
         for chore in self.chores.all():
             chore.users.add(member)
+            chore.get_next_user()
         
         for child in self.child.all():
             child.assign_member_to_chores(member)
@@ -255,7 +260,6 @@ class Chore(models.Model):
 
         return vdeltas
 
-    # These 2 functions may be unnecessary
     def _initialize_users(self):
         for user in self.parent_space.members.all():
             self._initialize_user(user)
@@ -263,7 +267,6 @@ class Chore(models.Model):
     def _initialize_user(self, user):
         self.users.add(user, through_defaults={
             'vwork': self.min_vwork,
-            'vdelta':1.0,
             'work':0,
             'delta_src':100
             })

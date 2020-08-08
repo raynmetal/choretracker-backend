@@ -96,7 +96,7 @@ def _order_project(vworks, vdeltas, interval, initial_offset, last_by=None, peri
         
         # Update value of user's vwork
         vwork = vworks.pop(_index(vworks, last_by)) 
-        vwork = _update_vwork(vwork, vdeltas)
+        vwork = _update_vwork(vwork, vdeldtas)
         
         # Insert vwork into appropriate position in the list
         vworks.insert(_next_vwork_index(vworks, vwork[1]), vwork)
