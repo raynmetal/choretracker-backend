@@ -2,7 +2,7 @@ from django.contrib.auth import authenticate
 
 from rest_framework import serializers 
 
-from tracker.models import User, Space, Chore
+from tracker.models import User, Space, Chore, Request
 
 # Serializes User
 class UserSerializer(serializers.ModelSerializer):
@@ -192,3 +192,28 @@ class ChoreListSerializer(serializers.Serializer):
 
         instance.refresh_from_db()
         return instance
+
+
+class RequestSerializer(serializers.Serializer):
+    from_user = MemberSerializer(required=True)
+    to_user = MemberSerializer(required=True)
+    space_id = serializers.IntegerField(required=True)
+    id = serializers.IntegerField(read_only=True) 
+
+    created_date = serializers.DateField(read_only=True)
+
+    def create(self, validated_data):
+        space_id = validated_data.get('space_id')
+        from_user = validated_data.get('from_user')
+        to_user = validated_data.get('to_user')
+
+        from_user = User.objects.get(email=from_user["email"])
+        to_user = User.objects.get(email=to_user["email"])
+        space = Space.objects.get(pk=space_id)
+
+        return Request.objects.create(from_user=from_user, to_user=to_user, space=space)
+
+
+class UserCalendarSerializer(serializers.Serializer):
+    #TODO: define calendar serializer
+    pass

@@ -13,9 +13,9 @@ from rest_framework.renderers import JSONRenderer
 from tracker.serializers import (
     RegistrationSerializer, LoginSerializer, UserSerializer,
     RootSpaceSerializer, SpaceSerializer, ChoreListSerializer,
-    MemberSerializer)
+    MemberSerializer, RequestSerializer)
 from tracker.renderers import UserJSONRenderer
-from tracker.models import Chore, Space, User
+from tracker.models import Chore, Space, User, Request
 
 class HomePageView(TemplateView):
     template_name = "index.html"
@@ -139,6 +139,7 @@ class MemberListView(APIView):
         serializer = MemberSerializer(members, many=True)
         return Response(serializer.data)
 
+
 class ChoreListView(APIView):
     """
     List chores belonging to a space or a user 
@@ -177,3 +178,60 @@ class ChoreListView(APIView):
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class RequestView(APIView):
+    """
+    List chores received by a user, or create requests 
+    """
+
+    permission_classes = (IsAuthenticated,)
+    def get(self, request, format=None):
+        user = request.user 
+
+        serializer = RequestSerializer(user.received_requests, many=True)
+        return Response(serializer.data)
+    
+    def post(self, request, space_id, format=None):
+        from_user = {'email': request.user.email}
+        new_request = request.data
+        new_request["space_id"] = space_id
+        new_request["from_user"] = from_user
+        print(new_request)
+        
+        serializer = RequestSerializer(data=new_request)
+  
+        if(serializer.is_valid()):
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class AcceptRequestView(APIView):
+    """
+    Adds user to the space associated with the request
+    """
+
+    permission_classes = (IsAuthenticated,)
+    def post(self, request, format=None):
+        user = request.user
+        request_id = request.data.get('request_id')
+        request_instance = Request.objects.get(pk=request_id)
+
+        if(request_instance.to_user != user):
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        request_instance.space.add_member(user)
+        request_instance.space.assign_member_to_chores(user)
+
+        request_instance.delete()
+
+        return Response()
+
+
+class UserCalendarView(APIView):
+    # TODO: define calendar view
+    pass
+
+

@@ -2,7 +2,7 @@ from django.urls import path, include
 
 from tracker.views import (RegistrationAPIView, LoginAPIView,
     UserRetrieveUpdateAPIView, HomePageView, SpaceListView,
-    ChoreListView, MemberListView)
+    ChoreListView, MemberListView, RequestView, AcceptRequestView)
 
 app_name = 'tracker'
 
@@ -12,12 +12,16 @@ api_urlpatterns = [
     path('user/', UserRetrieveUpdateAPIView.as_view()),
     
     path('space/', SpaceListView.as_view()),
-    path('space/<int:parent>/subspaces', SpaceListView.as_view()),
+    path('space/<int:parent>/subspaces/', SpaceListView.as_view()),
     
-    path('space/<int:space>/members', MemberListView.as_view()),
+    path('space/<int:space>/members/', MemberListView.as_view()),
     
+    path('requests/', RequestView.as_view()),
+    path('space/<int:space_id>/request/create/', RequestView.as_view()),
+    path('requests/accept/', AcceptRequestView.as_view()),
+
     path('chore/', ChoreListView.as_view()),
-    path('space/<int:parent_space>/chores', ChoreListView.as_view())
+    path('space/<int:parent_space>/chores', ChoreListView.as_view()),
 ]
 
 

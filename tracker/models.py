@@ -88,8 +88,21 @@ class Space(models.Model):
         return self.parent.full_name + "/" + self.name
 
     def initialize_members_from_parent_space(self):
-        for member in self.parent.members.all():
-            self.members.add(member)
+        """
+        Used to inherit members from parent space, for example 
+        when a new space is added
+        """
+        if(self.parent):
+            for member in self.parent.members.all():
+                self.members.add(member)
+
+    def add_member(self, member):
+        """
+        Used to add user to this space and all its subspaces
+        """
+        self.members.add(member) 
+        for child in self.child.all():
+            child.initialize_member(member)
 
     def assign_members_to_chores(self):
         for member in self.members.all():
@@ -272,6 +285,17 @@ class Chore(models.Model):
             })
 
 
+class Request(models.Model):
+    from_user = models.ForeignKey(User, related_name='sent_requests', on_delete=models.CASCADE)
+    to_user = models.ForeignKey(User, related_name='received_requests', on_delete=models.CASCADE)
+    space = models.ForeignKey(Space, related_name='pending_requests', on_delete=models.CASCADE)
+
+    created_date = models.DateField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['created_date']
+
+
 class UserChore(models.Model):
     chore = models.ForeignKey(Chore, on_delete=models.CASCADE)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
@@ -347,6 +371,8 @@ class UserSpace(models.Model):
             child.userspace_set.get(user=self.user).mark_available()
         
         self.save()
+
+
     
 
 @receiver(pre_delete, sender=User)
