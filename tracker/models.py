@@ -28,6 +28,7 @@ class User(AbstractUser, PermissionsMixin):
     objects = CustomUserManager()
     def __str__(self):
         return self.email
+    
     @property 
     def token(self):
         return self._generate_jwt_token() 
@@ -149,9 +150,8 @@ class Chore(models.Model):
     next_date = models.DateField(default=datetime.date.today() + datetime.timedelta(days=1))
     last_date = models.DateField(null=True)
 
-    # The next user in
-    next_user = models.ForeignKey(User, null=True, related_name='upcoming_%(class)s', on_delete=models.SET_NULL)
-    last_user = models.ForeignKey(User, null=True, related_name='completed_%(class)s', on_delete=models.SET_NULL)
+    next_user = models.ForeignKey(User, null=True, related_name='upcoming_chores', on_delete=models.SET_NULL)
+    last_user = models.ForeignKey(User, null=True, related_name='recently_completed_chores', on_delete=models.SET_NULL)
 
     def schedule_chore(self, date): 
         """

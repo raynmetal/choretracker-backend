@@ -137,8 +137,3 @@ class ModelTestCase(TestCase):
         self.assertEqual(userchore.chore.min_vwork, 6.0)
         self.assertEqual(userchore.vwork, 6.0)
 
-
-
-
-
-
