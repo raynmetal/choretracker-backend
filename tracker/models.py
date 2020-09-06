@@ -334,8 +334,8 @@ class UserChore(models.Model):
 
 
 class UserSpace(models.Model):
-    space = models.ForeignKey(Space, on_delete=models.CASCADE)
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    space = models.ForeignKey(Space, related_name='userspaces', on_delete=models.CASCADE)
+    user = models.ForeignKey(User, related_name='userspaces', on_delete=models.CASCADE)
 
     available = models.BooleanField(default=True)
 

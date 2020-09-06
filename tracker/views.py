@@ -13,9 +13,10 @@ from rest_framework.renderers import JSONRenderer
 from tracker.serializers import (
     RegistrationSerializer, LoginSerializer, UserSerializer,
     RootSpaceSerializer, SpaceSerializer, ChoreListSerializer,
-    MemberSerializer, RequestSerializer)
+    UserEmailSerializer, RequestSerializer)
 from tracker.renderers import UserJSONRenderer
-from tracker.models import Chore, Space, User, Request
+from tracker.models import (Chore, Space, User, Request,
+                            UserSpace, UserChore)
 
 class HomePageView(TemplateView):
     template_name = "index.html"
@@ -67,8 +68,8 @@ class LoginAPIView(APIView):
 
         serializer = self.serializer_class(data=user)
         serializer.is_valid(raise_exception=True)
-
-        return Response(serializer.data, status = status.HTTP_200_OK)
+        response = Response(serializer.data, status = status.HTTP_200_OK)
+        return response
 
 
 class SpaceListView(APIView):
@@ -76,8 +77,8 @@ class SpaceListView(APIView):
     List spaces user is a member of/list subspaces under 
     a space the user is a member of
     """
-    #TODO: make access to space list contingent on authentication 
-    #     and membership
+    # TODO: make access to space list contingent on authentication 
+    # and membership
     permission_classes = (IsAuthenticated,)
     def get(self, request, format=None, parent=None):
         user = request.user
@@ -94,6 +95,8 @@ class SpaceListView(APIView):
 
         spaces = space.child.all()
         serializer = SpaceSerializer(spaces, many=True)
+        
+
         return Response(serializer.data)
 
     def post(self, request, format=None, parent=None):
@@ -136,7 +139,7 @@ class MemberListView(APIView):
         # user must be a member of this space to view other members
         if not members.filter(pk=request.user.pk).count():
             return Response(None, status=status.HTTP_400_BAD_REQUEST)
-        serializer = MemberSerializer(members, many=True)
+        serializer = UserEmailSerializer(members, many=True)
         return Response(serializer.data)
 
 
